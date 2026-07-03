@@ -3,132 +3,176 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-# -----------------------------
+# ----------------------------
 # Page Configuration
-# -----------------------------
+# ----------------------------
 st.set_page_config(
     page_title="CIFAR-10 Image Classifier",
-    page_icon="🖼️",
-    layout="centered"
+    page_icon="🧠",
+    layout="wide"
 )
 
-# -----------------------------
-# Load Model
-# -----------------------------
-model = tf.keras.models.load_model("cifar10_classifier.keras")
-
-# -----------------------------
-# Class Names
-# -----------------------------
-class_names = [
-    "Airplane",
-    "Automobile",
-    "Bird",
-    "Cat",
-    "Deer",
-    "Dog",
-    "Frog",
-    "Horse",
-    "Ship",
-    "Truck"
-]
-
-# -----------------------------
-# Header
-# -----------------------------
+# ----------------------------
+# Custom CSS
+# ----------------------------
 st.markdown("""
-<h1 style='text-align:center;'>🖼️ CIFAR-10 Image Classifier</h1>
+<style>
 
-<p style='text-align:center;font-size:18px;color:gray;'>
-Classify images into one of the 10 CIFAR-10 categories using a
-Convolutional Neural Network (CNN) trained with TensorFlow.
-</p>
+.main{
+    padding-top:2rem;
+    padding-left:3rem;
+    padding-right:3rem;
+}
+
+h1{
+    text-align:center;
+    color:#4F8BF9;
+    font-size:50px;
+}
+
+h3{
+    color:#4F8BF9;
+}
+
+.stButton>button{
+    width:100%;
+    border-radius:10px;
+}
+
+.prediction{
+    background:#1f2937;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+}
+
+</style>
 """, unsafe_allow_html=True)
 
-# -----------------------------
-# Supported Classes
-# -----------------------------
-with st.expander("📋 Supported Classes"):
-    st.markdown("""
-- ✈️ Airplane
-- 🚗 Automobile
-- 🐦 Bird
-- 🐱 Cat
-- 🦌 Deer
-- 🐶 Dog
-- 🐸 Frog
-- 🐴 Horse
-- 🚢 Ship
-- 🚚 Truck
+# ----------------------------
+# Load Model
+# ----------------------------
+@st.cache_resource
+def load_model():
+    return tf.keras.models.load_model("cifar10_classifier.keras")
+
+model = load_model()
+
+# ----------------------------
+# Class Names
+# ----------------------------
+class_names = [
+    "Airplane ✈️",
+    "Automobile 🚗",
+    "Bird 🐦",
+    "Cat 🐱",
+    "Deer 🦌",
+    "Dog 🐶",
+    "Frog 🐸",
+    "Horse 🐴",
+    "Ship 🚢",
+    "Truck 🚚"
+]
+
+# ----------------------------
+# Sidebar
+# ----------------------------
+st.sidebar.title("🧠 Project Information")
+
+st.sidebar.markdown("""
+### CNN Image Classifier
+
+This project classifies images into **10 CIFAR-10 classes** using a Convolutional Neural Network.
+
+### Dataset
+- CIFAR-10
+- 60,000 Images
+- 10 Classes
+
+### Model
+- TensorFlow
+- CNN
+- Accuracy ≈ **74%**
+
+### Developed By
+Anna Joby
 """)
 
-st.info(
-    "ℹ️ This model was trained on **32×32 CIFAR-10 images**. "
-    "Predictions on high-resolution real-world photos may not always be accurate."
-)
+# ----------------------------
+# Header
+# ----------------------------
+st.title("🧠 CIFAR-10 Image Classifier")
 
-# -----------------------------
-# Upload Image
-# -----------------------------
+st.markdown("""
+### Deep Learning Based Image Classification
+
+Upload an image and let the trained CNN predict its class.
+""")
+
+st.info("""
+**Supported Classes**
+
+✈️ Airplane • 🚗 Automobile • 🐦 Bird • 🐱 Cat • 🦌 Deer • 🐶 Dog • 🐸 Frog • 🐴 Horse • 🚢 Ship • 🚚 Truck
+""")
+
+# ----------------------------
+# Upload
+# ----------------------------
 uploaded_file = st.file_uploader(
-    "📤 Upload an Image",
-    type=["jpg", "jpeg", "png"]
+    "Choose an image",
+    type=["jpg","jpeg","png"]
 )
 
-# -----------------------------
+# ----------------------------
 # Prediction
-# -----------------------------
-if uploaded_file is not None:
+# ----------------------------
+if uploaded_file:
 
     image = Image.open(uploaded_file).convert("RGB")
 
-    img = image.resize((32, 32))
-    img = np.array(img).astype("float32") / 255.0
-    img = np.expand_dims(img, axis=0)
-
-    prediction = model.predict(img, verbose=0)
-
-    predicted_index = np.argmax(prediction)
-    predicted_class = class_names[predicted_index]
-    confidence = float(prediction[0][predicted_index] * 100)
-
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([1,1])
 
     with col1:
-        st.image(
-            image,
-            caption="Uploaded Image",
-            use_container_width=True
-        )
+        st.image(image,use_container_width=True)
+
+    img = image.resize((32,32))
+    img = np.array(img)/255.0
+    img = np.expand_dims(img,axis=0)
+
+    prediction = model.predict(img,verbose=0)
+
+    pred = np.argmax(prediction)
+    confidence = np.max(prediction)*100
 
     with col2:
 
-        st.success(f"### ✅ {predicted_class}")
+        st.subheader("Prediction")
+
+        st.success(f"### {class_names[pred]}")
 
         st.metric(
             label="Confidence",
             value=f"{confidence:.2f}%"
         )
 
-        st.progress(min(int(confidence), 100))
+        st.progress(float(confidence)/100)
 
-    st.markdown("---")
+        st.subheader("Top Predictions")
 
-    st.subheader("📊 Top 5 Predictions")
+        top3 = np.argsort(prediction[0])[::-1][:3]
 
-    top5 = np.argsort(prediction[0])[::-1][:5]
+        for i in top3:
+            st.write(
+                f"**{class_names[i]}** : {prediction[0][i]*100:.2f}%"
+            )
 
-    for i in top5:
-        st.write(
-            f"**{class_names[i]}** — {prediction[0][i]*100:.2f}%"
-        )
-        st.progress(min(int(prediction[0][i]*100), 100))
-
-# -----------------------------
+# ----------------------------
 # Footer
-# -----------------------------
+# ----------------------------
 st.markdown("---")
 
 st.caption(
-    "Developed using TensorFlow • Streamlit • CIFAR-10 Dataset"
+"""
+Developed using TensorFlow, Streamlit and the CIFAR-10 Dataset.
+"""
 )
