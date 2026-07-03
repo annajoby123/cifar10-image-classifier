@@ -94,8 +94,7 @@ This project classifies images into **10 CIFAR-10 classes** using a Convolutiona
 - CNN
 - Accuracy ≈ **74%**
 
-### Developed By
-Anna Joby
+
 """)
 
 # ----------------------------
